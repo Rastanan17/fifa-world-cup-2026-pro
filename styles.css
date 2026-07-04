@@ -738,3 +738,9 @@ th.team-head {
   filter: grayscale(0.5); /* Opcional: le da un toque grisáceo */
   opacity: 0.8;
 }
+
+.editable-teams strong{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
