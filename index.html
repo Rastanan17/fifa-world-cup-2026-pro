@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mundial FIFA 2026 | PRO</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+  <div class="hero-content">
+    <div class="hero-text">
+      <p class="eyebrow">FIFA WORLD CUP 2026</p>
+      <h1>🏆 Mundial FIFA 2026 PRO</h1>
+      <p class="subtitle">Simulador completo del Mundial 2026 con grupos, mejores terceros, eliminatorias, estadísticas y resultados editables en tiempo real.</p>
+      <div class="host-card">
+        <img src="img/flags/Estados Unidos.png" alt="Estados Unidos">
+        <small>Estados Unidos</small>
+      </div>
+      <div class="host-card">
+        <img src="img/flags/Canadá.png" alt="Canadá">
+        <small>Canadá</small>
+      </div>
+      <div class="host-card">
+        <img src="img/flags/México.png" alt="México">
+        <small>México</small>
+      </div>
+    </div>
+    <div class="champion-card">
+      <div class="champion-title">Campeón vigente</div>
+      <img src="img/flags/Argentina.png" alt="Argentina" class="champion-flag">
+      <strong>Argentina</strong>
+      <small>Campeón Mundial 2022</small>
+    </div>
+  </div>
+  <div class="summary-grid" aria-label="Resumen del torneo">
+    <div class="summary-card">
+      <strong id="teams-count">48</strong>
+      <span>Selecciones</span>
+    </div>
+    <div class="summary-card">
+      <strong id="matches-count">104</strong>
+      <span>Partidos</span>
+    </div>
+    <div class="summary-card">
+      <strong>12</strong>
+      <span>Grupos</span>
+    </div>
+    <div class="summary-card">
+      <strong>3</strong>
+      <span>Anfitriones</span>
+    </div>
+  </div>
+</header>
+
+  <main>
+    <section class="toolbar" aria-label="Controles de navegación">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-view="general" type="button">Tabla general</button>
+        <button class="tab" data-view="groups" type="button">Grupos</button>
+        <button class="tab" data-view="matches" type="button">Fixture</button>
+        <button class="tab" data-view="knockout" type="button">Eliminatorias</button>
+        <button class="tab" data-view="history" type="button">Historia</button>
+      </div>
+      <label class="search">
+        <span>Buscar</span>
+        <input id="search-input" type="search" placeholder="Selección, grupo o estadio">
+      </label>
+      <button id="reset-data" class="ghost-button" type="button">Limpiar datos</button>
+    </section>
+    <section id="history" class="view">
+      <div id="champions-grid">
+        <button id="toggle-history-btn">Campeones del Mundo</button>
+        <div id="history-section" style="display: none;">
+        <div id="history-grid" class="history-grid"></div>
+      </div>
+      </div>
+    </section>
+    <section id="general" class="view active" aria-labelledby="general-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Ranking</p>
+          <h2 id="general-title">Tabla de posiciones</h2>
+        </div>
+        <p>Acumula fase de grupos y eliminatorias. Ordena por PTS, DIF, GF, menos tarjetas y menos faltas.</p>
+      </div>
+      <div class="table-shell">
+        <table>
+          <thead>
+            <tr>
+              <th>POS</th>
+              <th>Selección</th>
+              <th>PTS</th>
+              <th>PJ</th>
+              <th>PG</th>
+              <th>PE</th>
+              <th>PP</th>
+              <th>GF</th>
+              <th>GC</th>
+              <th>DIF</th>
+              <th>TA</th>
+              <th>TR</th>
+              <th>FALT</th>
+            </tr>
+          </thead>
+          <tbody id="general-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="groups" class="view" aria-labelledby="groups-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Fase inicial</p>
+          <h2 id="groups-title">Grupos</h2>
+        </div>
+        <select id="group-filter" aria-label="Filtrar por grupo">
+          <option value="all">Todos los grupos</option>
+        </select>
+      </div>
+      <div id="groups-grid" class="groups-grid"></div>
+    </section>
+
+    <section id="matches" class="view" aria-labelledby="matches-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Calendario</p>
+          <h2 id="matches-title">Fixture por ronda</h2>
+        </div>
+        <div class="filter-row">
+          <select id="round-filter" aria-label="Filtrar por ronda">
+            <option value="all">Todas las rondas</option>
+            <option value="1">1ra ronda</option>
+            <option value="2">2da ronda</option>
+            <option value="3">3ra ronda</option>
+          </select>
+          <select id="stadium-filter" aria-label="Filtrar por estadio">
+            <option value="all">Todos los estadios</option>
+          </select>
+        </div>
+      </div>
+      <div id="matches-list" class="matches-list"></div>
+    </section>
+
+    <section id="knockout" class="view" aria-labelledby="knockout-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Próxima etapa</p>
+          <h2 id="knockout-title">Cruces estimados</h2>
+        </div>
+        <div class="filter-row-2">
+          <select id="round-filter-2" aria-label="Filtrar por ronda-2">
+            <option value="all">Todas las rondas</option>
+          </select>
+          <select id="knockout-stadium-filter" aria-label="Filtrar por estadio">
+            <option value="all">Todos los estadios</option>
+          </select>
+        </div>
+        <p>Incluye los 2 primeros de cada grupo y los 8 mejores terceros según la tabla calculada.</p>
+      </div>
+      <div id="knockout-grid" class="knockout-grid"></div>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="history.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
