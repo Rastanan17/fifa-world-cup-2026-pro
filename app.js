@@ -156,10 +156,14 @@ function numberOrZero(value) {
 }
 
 function applyMatch(stats, match, includePoints = true) {
+
   if (!baseTeamNames.has(match.home) || !baseTeamNames.has(match.away)) return;
 
-  const home = stats[match.home] || (stats[match.home] = emptyStats(match.home, findTeamGroup(match.home)));
-  const away = stats[match.away] || (stats[match.away] = emptyStats(match.away, findTeamGroup(match.away)));
+  const home = stats[match.home] ||
+    (stats[match.home] = emptyStats(match.home, findTeamGroup(match.home)));
+
+  const away = stats[match.away] ||
+    (stats[match.away] = emptyStats(match.away, findTeamGroup(match.away)));
 
   home.ta += numberOrZero(match.homeYellow);
   away.ta += numberOrZero(match.awayYellow);
@@ -172,50 +176,88 @@ function applyMatch(stats, match, includePoints = true) {
 
   home.pj += 1;
   away.pj += 1;
+
   home.gf += match.homeGoals;
   home.gc += match.awayGoals;
+
   away.gf += match.awayGoals;
   away.gc += match.homeGoals;
 
   if (!includePoints) return;
 
+  // Gana local
   if (match.homeGoals > match.awayGoals) {
 
-  home.pg += 1;
-  away.pp += 1;
+    home.pg += 1;
+    away.pp += 1;
+    home.pts += 3;
 
-  home.pts += 3;
-
-}
-
-else if (match.homeGoals < match.awayGoals) {
-  away.pg += 1;
-  home.pp += 1;
-  away.pts += 3;
-}
-else {
-  const hasPens =
-    Number.isFinite(match.homePens) &&
-    Number.isFinite(match.awayPens);
-  if (hasPens) {
-    if (match.homePens > match.awayPens) {
-      home.pg += 1;
-      away.pp += 1;
-      home.pts += 3;
+    if (match.stage !== "group") {
+      away.eliminated = true;
     }
-    else if (match.awayPens > match.homePens) {
-      away.pg += 1;
-      home.pp += 1;
-      away.pts += 3;
-    }
+
   }
+
+  // Gana visitante
+  else if (match.homeGoals < match.awayGoals) {
+
+    away.pg += 1;
+    home.pp += 1;
+    away.pts += 3;
+
+    if (match.stage !== "group") {
+      home.eliminated = true;
+    }
+
+  }
+
+  // Empate
   else {
-    home.pe += 1;
-    away.pe += 1;
-    home.pts += 1;
-    away.pts += 1;
+
+    const hasPens =
+      Number.isFinite(match.homePens) &&
+      Number.isFinite(match.awayPens);
+
+    if (hasPens) {
+
+      // Gana local por penales
+      if (match.homePens > match.awayPens) {
+
+        home.pg += 1;
+        away.pp += 1;
+        home.pts += 3;
+
+        if (match.stage !== "group") {
+          away.eliminated = true;
+        }
+
+      }
+
+      // Gana visitante por penales
+      else if (match.awayPens > match.homePens) {
+
+        away.pg += 1;
+        home.pp += 1;
+        away.pts += 3;
+
+        if (match.stage !== "group") {
+          home.eliminated = true;
+        }
+
+      }
+
+    } else {
+
+      home.pe += 1;
+      away.pe += 1;
+
+      home.pts += 1;
+      away.pts += 1;
+
+    }
+
   }
-}
+
 }
 
 function finalizeStats(stats) {
@@ -415,15 +457,43 @@ function calculateGeneralTable(groupTables, knockoutMatches) {
       .find(team => team.position === 4)?.team
   )
   .filter(Boolean);
+  const qualifiedThirdNames = [];
+
+knockoutMatches.forEach(match => {
+
+  if(match.stage !== "16avos de final") return;
+
+  const homeSeed = match.homeSeed || "";
+  const awaySeed = match.awaySeed || "";
+
+  if(homeSeed.startsWith("3")) {
+    qualifiedThirdNames.push(match.home);
+  }
+
+  if(awaySeed.startsWith("3")) {
+    qualifiedThirdNames.push(match.away);
+  }
+
+});
+
+Object.values(groupTables)
+  .flat()
+  .forEach(team => {
+
+    if(
+      team.position === 3 &&
+      !qualifiedThirdNames.includes(team.team)
+    ){
+      stats[team.team].eliminated = true;
+    }
+
+  });
 
   return Object.values(finalizeStats(stats))
   .sort(compareTeams)
   .map((team, index) => ({
     ...team,
-    position: index + 1,
-
-    eliminated:
-      fourthPlaceTeams.includes(team.team)
+    position: index + 1
   }));
 }
 
@@ -685,8 +755,8 @@ function editableMatchCard(match, extraLabel = "") {
       </div>
 
       <div class="editable-teams">
-        <strong class="${homeEliminated ? 'eliminated-red' : ''}">${edited.home}</strong>
-        <strong class="${awayEliminated ? 'eliminated-red' : ''}">${edited.away}</strong>
+        <strong class="${homeEliminated ? 'eliminated-red' : ''}">${teamFlag(edited.home)} ${edited.home}</strong>
+        <strong class="${awayEliminated ? 'eliminated-red' : ''}">${teamFlag(edited.away)} ${edited.away}</strong>
       </div>
 
       <div class="edit-grid">
