@@ -5,14 +5,17 @@
   --panel: #ffffff;
   --page: #eef3f0;
   --navy: #24384d;
-  --green: #dcebd4;
-  --yellow: #fff1bb;
-  --red: #f8c4c7;
+  --green:#22c55e;
+  --yellow:#facc15;
+  --red:#ef4444;
   --orange: #f47a2a;
   --blue: #b9d7f0;
   --gold: #d8ae10;
   --danger: #df4848;
   --shadow: 0 18px 45px rgba(22, 32, 42, 0.12);
+  --gold:#fbbf24;
+  --surface:#12233b;
+  --bg:#08111f;
 }
 
 * {
@@ -733,6 +736,21 @@ th.team-head {
   background: var(--orange);
 }
 
+#toggleThirds {
+  background: var(--navy);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  margin: 20px 0;
+}
+
+#toggleThirds:hover {
+  background: var(--orange);
+}
+
 .eliminated-red {
   background-color: var(--red); /* Usando la variable de color que ya definiste en :root */
   filter: grayscale(0.5); /* Opcional: le da un toque grisáceo */
@@ -743,4 +761,122 @@ th.team-head {
   display:flex;
   align-items:center;
   gap:8px;
+}
+
+.bracket{
+  display:flex;
+  gap:40px;
+  align-items:flex-start;
+  overflow-x:auto;
+  padding:20px;
+}
+
+.bracket-column{
+  display:flex;
+  flex-direction:column;
+  min-width:220px;
+}
+
+.bracket-column h3{
+  text-align:center;
+  margin-bottom:20px;
+  color:black;
+}
+
+.bracket-match{
+  background:#1e3a5f;
+  border:2px solid #4fc3f7;
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:12px;
+  color:white;
+  width:240px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  position: relative;
+}
+
+.bracket-column:nth-child(2){
+  margin-top:80px;
+}
+
+.bracket-column:nth-child(3){
+  margin-top:260px;
+}
+
+.bracket-column:nth-child(4){
+  margin-top:600px;
+}
+
+.bracket-column:nth-child(5){
+  margin-top:900px;
+}
+
+.bracket-team{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.bracket-team{
+  padding:5px;
+  background:rgba(255,255,255,.08);
+  border-radius:4px;
+}
+
+.bracket-score{
+  text-align:center;
+  font-weight:bold;
+  margin:6px 0;
+}
+
+.bracket-pens{
+  text-align:center;
+  font-size:.8rem;
+  opacity:.8;
+}
+
+.winner{
+  color:#00ff88;
+  font-weight:bold;
+  border-left: 4px solid #00ff88; 
+}
+
+.bracket-column.r16 .bracket-match{
+  margin-bottom:28px;
+}
+
+.bracket-column.r8 .bracket-match{
+  margin-bottom:200px;
+}
+
+.bracket-column.qf .bracket-match{
+  margin-bottom:530px;
+}
+
+.bracket-column.sf .bracket-match{
+  margin-bottom:1170px;
+}
+
+.bracket-column.f .bracket-match{
+  margin-top:120px;
+}
+
+.connector{
+  position:absolute;
+  width:40px;
+  height:120px;
+  border-right:3px solid #4fc3f7;
+  border-top:3px solid #4fc3f7;
+  right:-40px;
+  top:50%;
+}
+
+.connector-right{
+  position:absolute;
+  right:-40px;
+  top:50%;
+  width:40px;
+  border-top:3px solid #4fc3f7;
 }
