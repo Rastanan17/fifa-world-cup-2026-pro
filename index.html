@@ -61,6 +61,7 @@
         <button class="tab" data-view="matches" type="button">Fixture</button>
         <button class="tab" data-view="knockout" type="button">Eliminatorias</button>
         <button class="tab" data-view="history" type="button">Historia</button>
+        <button class="tab" data-view="keys" type="button">Llave Eliminatorias</button>
       </div>
       <label class="search">
         <span>Buscar</span>
@@ -82,7 +83,7 @@
           <p class="eyebrow">Ranking</p>
           <h2 id="general-title">Tabla de posiciones</h2>
         </div>
-        <p>Acumula fase de grupos y eliminatorias. Ordena por PTS, DIF, GF, menos tarjetas y menos faltas.</p>
+          <p>Acumula fase de grupos y eliminatorias. Ordena por PTS, DIF, GF, menos tarjetas y menos faltas.</p>
       </div>
       <div class="table-shell">
         <table>
@@ -149,6 +150,7 @@
           <h2 id="knockout-title">Cruces estimados</h2>
         </div>
         <div class="filter-row-2">
+          <button id="toggleThirds">Mostrar Mejores Terceros</button>
           <select id="round-filter-2" aria-label="Filtrar por ronda-2">
             <option value="all">Todas las rondas</option>
           </select>
@@ -159,6 +161,9 @@
         <p>Incluye los 2 primeros de cada grupo y los 8 mejores terceros según la tabla calculada.</p>
       </div>
       <div id="knockout-grid" class="knockout-grid"></div>
+    </section>
+    <section id="keys" class="view">
+      <div id="bracket-view"></div>
     </section>
   </main>
 
