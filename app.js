@@ -30,17 +30,26 @@ const els = {
   matchesCount: document.querySelector("#matches-count"),
   historyBtn: document.querySelector("#toggle-history-btn"),
   historySection: document.querySelector("#history-section"),
+  bracketView: document.getElementById("bracket-view"),
+  knockoutBtn: document.querySelector("#toggleThirds"),
+  knockoutGrid: document.querySelector("#knockout-grid")
+};
+
+const roundClasses = {
+  "16avos de final": "r16",
+  "8vos de final": "r8",
+  "4tos de final": "qf",
+  "Semifinales": "sf",
+  "Final": "f"
 };
 
 const baseTeams = Object.values(sourceData.groups).flat().map((team) => ({
-  team: team.team,
-  group: findTeamGroup(team.team),
+  team: team.team, group: findTeamGroup(team.team),
 }));
 const baseTeamNames = new Set(baseTeams.map((team) => team.team));
 
 const groupMatches = sourceData.matches.map((match) => ({
-  ...match,
-  stage: "group",
+  ...match, stage: "group",
 }));
 
 const champions = [
@@ -69,9 +78,10 @@ const champions = [
 ];
 
 function findTeamGroup(teamName) {
-  return Object.entries(sourceData.groups).find(([, teams]) =>
-    teams.some((team) => team.team === teamName)
-  )?.[0] || "";
+  return Object.entries(sourceData.groups).find(
+    ([, teams]) => teams.some((team) => team.team === teamName)
+  )
+  ?.[0] || "";
 }
 
 function loadEdits() {
@@ -109,11 +119,9 @@ function getGeneralTableData() {
   const tableData = baseTeams.map(t => {
     // 1. Calculamos si el equipo perdió en alguna etapa eliminatoria
     const isEliminated = checkIfTeamIsEliminated(t.team);
-    
     // 2. Retornamos el equipo con el flag 'eliminated' actualizado
     return {
-      ...t,
-      pts: calculatePoints(t.team),
+      ...t, pts: calculatePoints(t.team),
       // ... otros cálculos (pj, pg, etc)
       eliminated: isEliminated // <--- AQUÍ ESTÁ LA CLAVE
     };
@@ -156,109 +164,71 @@ function numberOrZero(value) {
 }
 
 function applyMatch(stats, match, includePoints = true) {
-
   if (!baseTeamNames.has(match.home) || !baseTeamNames.has(match.away)) return;
-
-  const home = stats[match.home] ||
-    (stats[match.home] = emptyStats(match.home, findTeamGroup(match.home)));
-
-  const away = stats[match.away] ||
-    (stats[match.away] = emptyStats(match.away, findTeamGroup(match.away)));
-
-  home.ta += numberOrZero(match.homeYellow);
-  away.ta += numberOrZero(match.awayYellow);
-  home.tr += numberOrZero(match.homeRed);
-  away.tr += numberOrZero(match.awayRed);
-  home.faltas += numberOrZero(match.homeFouls);
-  away.faltas += numberOrZero(match.awayFouls);
-
-  if (!hasScore(match)) return;
-
-  home.pj += 1;
-  away.pj += 1;
-
-  home.gf += match.homeGoals;
-  home.gc += match.awayGoals;
-
-  away.gf += match.awayGoals;
-  away.gc += match.homeGoals;
-
-  if (!includePoints) return;
-
-  // Gana local
-  if (match.homeGoals > match.awayGoals) {
-
-    home.pg += 1;
-    away.pp += 1;
-    home.pts += 3;
-
-    if (match.stage !== "group") {
-      away.eliminated = true;
+  const home = stats[match.home] || (stats[match.home] = emptyStats(match.home, findTeamGroup(match.home)));
+  const away = stats[match.away] || (stats[match.away] = emptyStats(match.away, findTeamGroup(match.away)));
+    home.ta += numberOrZero(match.homeYellow);
+    away.ta += numberOrZero(match.awayYellow);
+    home.tr += numberOrZero(match.homeRed);
+    away.tr += numberOrZero(match.awayRed);
+    home.faltas += numberOrZero(match.homeFouls);
+    away.faltas += numberOrZero(match.awayFouls);
+      if (!hasScore(match)) return;
+        home.pj += 1;
+        away.pj += 1;
+        home.gf += match.homeGoals;
+        home.gc += match.awayGoals;
+        away.gf += match.awayGoals;
+        away.gc += match.homeGoals;
+          if (!includePoints) return;
+          // Gana local
+          if (match.homeGoals > match.awayGoals) {
+            home.pg += 1;
+            away.pp += 1;
+            home.pts += 3;
+              if (match.stage !== "group") {
+                away.eliminated = true;
+              }
+          }
+          // Gana visitante
+          else if (match.homeGoals < match.awayGoals) {
+            away.pg += 1;
+            home.pp += 1;
+            away.pts += 3;
+              if (match.stage !== "group") {
+                home.eliminated = true;
+              }
+          }
+          // Empate
+          else {
+            const hasPens = Number.isFinite(match.homePens) && Number.isFinite(match.awayPens);
+              if (hasPens) {
+                // Gana local por penales
+                if (match.homePens > match.awayPens) {
+                  home.pg += 1;
+                  away.pp += 1;
+                  home.pts += 3;
+                    if (match.stage !== "group") {
+                      away.eliminated = true;
+                    }
+                } // Gana visitante por penales
+                else if (match.awayPens > match.homePens) {
+                  away.pg += 1;
+                  home.pp += 1;
+                  away.pts += 3;
+                    if (match.stage !== "group") {
+                      home.eliminated = true;
+                    }
+                }
+              }
+              else {
+                home.pe += 1;
+                away.pe += 1;
+                home.pts += 1;
+                away.pts += 1;
+              }
+          }
     }
-
-  }
-
-  // Gana visitante
-  else if (match.homeGoals < match.awayGoals) {
-
-    away.pg += 1;
-    home.pp += 1;
-    away.pts += 3;
-
-    if (match.stage !== "group") {
-      home.eliminated = true;
-    }
-
-  }
-
-  // Empate
-  else {
-
-    const hasPens =
-      Number.isFinite(match.homePens) &&
-      Number.isFinite(match.awayPens);
-
-    if (hasPens) {
-
-      // Gana local por penales
-      if (match.homePens > match.awayPens) {
-
-        home.pg += 1;
-        away.pp += 1;
-        home.pts += 3;
-
-        if (match.stage !== "group") {
-          away.eliminated = true;
-        }
-
-      }
-
-      // Gana visitante por penales
-      else if (match.awayPens > match.homePens) {
-
-        away.pg += 1;
-        home.pp += 1;
-        away.pts += 3;
-
-        if (match.stage !== "group") {
-          home.eliminated = true;
-        }
-
-      }
-
-    } else {
-
-      home.pe += 1;
-      away.pe += 1;
-
-      home.pts += 1;
-      away.pts += 1;
-
-    }
-
-  }
-
-}
 
 function finalizeStats(stats) {
   Object.values(stats).forEach((team) => {
@@ -356,7 +326,7 @@ function resolveSeedRef(ref, seeds, availableThirds, usedThirdSeeds) {
 }
 
 function resolveMatchRef(ref, resolvedMatches, template) {
-  if (!ref) return { team: "Por definir", seed: "" };
+  if (!ref) return { team: "A Definir", seed: "" };
   if (baseTeamNames.has(ref)) return { team: ref, seed: "" };
 
   const explicitWinner = ref.match(/^G(P?\d+)$/);
@@ -399,13 +369,10 @@ const match = {
   stadium: template.stadium,
   group: template.stage,
   label: template.label,
-
   homeSeed: homeResolved.seed || template.homeRef,
   awaySeed: awayResolved.seed || template.awayRef,
-
-  home: homeResolved.team || "Por definir",
-  away: awayResolved.team || "Por definir",
-
+  home: homeResolved.team || "A Definir",
+  away: awayResolved.team || "A Definir",
   homeGoals: edited.homeGoals,
   awayGoals: edited.awayGoals,
   homePens: edited.homePens,
@@ -507,7 +474,17 @@ function teamCode(team) {
     .toUpperCase();
 }
 
-function teamFlag(team) {
+function teamFlag(team){
+
+  if(
+    !team ||
+    team.startsWith("Ganador") ||
+    team.startsWith("Perdedor") ||
+    team === "A Definir"
+  ){
+    return "";
+  }
+
   return `
     <img
       class="flag"
@@ -519,38 +496,28 @@ function teamFlag(team) {
 }
 
 function rowClass(team, scope = "general") {
-
   // Campeón
   if (team.team === getChampion()) {
     return "team-champion";
   }
-
   // TABLA DE GRUPOS
   if (scope === "group") {
-
     if (team.position <= 2) {
       return "team-active";
-    }
-
-    if (team.position === 3) {
+    } if (team.position === 3) {
       return "team-third";
     }
-
     return "team-eliminated";
   }
-
   // TABLA GENERAL
   if (team.eliminated) {
     return "team-eliminated";
   }
-
   return "team-active";
 }
 
 function tableRow(team, scope = "general") {
-
   const className = rowClass(team, scope);
-
   return `
     <tr class="${className}">
       <td>${team.position}</td>
@@ -571,29 +538,23 @@ function tableRow(team, scope = "general") {
 }
 
 function isStillAlive(teamName, groupTables, bestThirds) {
-
   const groupFinished =
     Object.values(groupTables)
       .every(group =>
         group.every(team => team.pj === 3)
       );
-
   if (!groupFinished) return true;
-
   // clasificados directos
   const qualified = new Set();
-
   Object.values(groupTables).forEach(group => {
     qualified.add(group[0].team);
     qualified.add(group[1].team);
   });
-
   bestThirds
     .slice(0,8)
     .forEach(team =>
       qualified.add(team.team)
     );
-
   return qualified.has(teamName);
 }
 
@@ -723,27 +684,78 @@ function statInput(match, field, label, className = "") {
   `;
 }
 
+function renderBracket() {
+  const matches =
+    calculateAll().knockout.pairings;
+  const rounds = {
+    "16avos de final": [],
+    "8vos de final": [],
+    "4tos de final": [],
+    "Semifinales": [],
+    "Final": []
+  };
+  matches.forEach(match => {
+    if(rounds[match.stage]){
+      rounds[match.stage].push(match);
+    }
+  });
+  els.bracketView.innerHTML = `
+    <div class="bracket">
+      ${Object.entries(rounds).map(([round,matches]) => `
+          <div class="bracket-column ${roundClasses[round]}">
+            <h3>${round}</h3>
+              ${matches.map(match => `
+                <div class="bracket-match">
+                  <div class="bracket-team">
+                    ${teamFlag(match.home)}
+                    <span>${bracketName(match.home)}</span>
+                  </div>
+                  <div class="bracket-score">
+                    ${match.homeGoals ?? "-"} - ${match.awayGoals ?? "-"}
+                    ${match.homePens !== null && match.awayPens !== null ? `
+                    <div class="bracket-pens">
+                      Pen: ${match.homePens} - ${match.awayPens}
+                    </div>
+                        ` : ""
+                      }
+                    <div class="connector-right"></div>
+                  </div>
+                  <div class="bracket-team">
+                    ${teamFlag(match.away)}
+                    <span>${bracketName(match.away)}</span>
+                  </div>
+                  <div class="connector"></div>
+                </div>
+            `).join("")}
+          </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function bracketName(name){
+  if(name.startsWith("Ganador")){
+    return "A Definir";
+  }
+  return name;
+}
+
 function editableMatchCard(match, extraLabel = "") {
   const edited = mergedMatch(match);
   const showPens = match.stage !== "group";
-
   // IMPORTANTE: Usamos 'edited' para los cálculos, ya que tiene los valores que el usuario escribió
   const hG = parseInt(edited.homeGoals) || 0;
   const aG = parseInt(edited.awayGoals) || 0;
   const hP = parseInt(edited.homePens);
   const aP = parseInt(edited.awayPens);
-
   // Verificamos si realmente se ingresaron goles para evitar que se ponga rojo antes de empezar
   const isMatchPlayed = (edited.homeGoals !== undefined && edited.homeGoals !== "") && 
                        (edited.awayGoals !== undefined && edited.awayGoals !== "");
-
   // Lógica de eliminación usando 'edited'
   const homeEliminated = isMatchPlayed && 
                          ((hG < aG) || (hG === aG && !isNaN(hP) && !isNaN(aP) && hP < aP));
-  
   const awayEliminated = isMatchPlayed && 
                          ((aG < hG) || (aG === hG && !isNaN(hP) && !isNaN(aP) && aP < hP));
-  
   return `
     <article class="match-card">
       <div class="match-meta">
@@ -753,25 +765,25 @@ function editableMatchCard(match, extraLabel = "") {
         <span>${edited.group}</span>
         ${extraLabel ? `<span>${extraLabel}</span>` : ""}
       </div>
-
+      
       <div class="editable-teams">
         <strong class="${homeEliminated ? 'eliminated-red' : ''}">${teamFlag(edited.home)} ${edited.home}</strong>
         <strong class="${awayEliminated ? 'eliminated-red' : ''}">${teamFlag(edited.away)} ${edited.away}</strong>
       </div>
-
+      
       <div class="edit-grid">
         ${statInput(edited, "homeGoals", "Goles")}
         ${statInput(edited, "awayGoals", "Goles")}
-
+        
         ${showPens ? statInput(edited, "homePens", "Pen") : ""}
         ${showPens ? statInput(edited, "awayPens", "Pen") : ""}
-
+        
         ${statInput(edited, "homeYellow", "TA", "yellow-input")}
         ${statInput(edited, "awayYellow", "TA", "yellow-input")}
-
+        
         ${statInput(edited, "homeRed", "TR", "red-input")}
         ${statInput(edited, "awayRed", "TR", "red-input")}
-
+        
         ${statInput(edited, "homeFouls", "Faltas")}
         ${statInput(edited, "awayFouls", "Faltas")}
       </div>
@@ -797,7 +809,7 @@ function renderMatches() {
 
 function renderBestThirds(bestThirds) {
   return `
-    <article class="thirds-card">
+    <article class="thirds-card" id="thirds-card">
       <h3>Mejores terceros</h3>
       <p>Clasifican los mejores 8 terceros por PTS, DIF, GF, menos amarillas, menos rojas y menos faltas.</p>
       <table>
@@ -864,9 +876,7 @@ function renderKnockout(bestThirds, pairings) {
   els.knockoutGrid.innerHTML = `
     ${renderBestThirds(bestThirds)}
     <div class="knockout-list">
-      ${
-        cards ||
-        `<div class="empty-state">No hay cruces para ese filtro.</div>`
+      ${cards || `<div class="empty-state">No hay cruces para ese filtro.</div>`
       }
     </div>
   `;
@@ -902,38 +912,13 @@ function renderHistory() {
 
   els.historyGrid.innerHTML = window.WC26_HISTORY.map(cup => `
     <article class="history-card">
-
-      <div class="history-year">
-        ${cup.year}
-      </div>
-
-      <img
-        src="img/flags/${cup.flag}"
-        alt="${cup.champion}"
-        class="history-flag"
-      >
-
-      <h3 class="history-champion">
-        🏆 ${cup.champion}
-      </h3>
-
+      <div class="history-year">${cup.year}</div>
+      <img src="img/flags/${cup.flag}" alt="${cup.champion}" class="history-flag">
+      <h3 class="history-champion">🏆 ${cup.champion}</h3>
       <div class="history-info">
-
-        <p>
-          <strong>Final:</strong><br>
-          ${cup.champion} ${cup.score} ${cup.runnerUp}
-        </p>
-
-        <p>
-          <strong>Subcampeón:</strong><br>
-          ${cup.runnerUp}
-        </p>
-
-        <p>
-          <strong>Sede:</strong><br>
-          ${cup.host}
-        </p>
-
+        <p><strong>Final:</strong><br>${cup.champion} ${cup.score} ${cup.runnerUp}</p>
+        <p><strong>Subcampeón:</strong><br>${cup.runnerUp}</p>
+        <p><strong>Sede:</strong><br>${cup.host}</p>
       </div>
 
     </article>
@@ -985,11 +970,23 @@ function calculateAll() {
 }
 
 function renderAll() {
-  const { groupTables, knockout, generalTable } = calculateAll();
+
+  const {
+    groupTables,
+    knockout,
+    generalTable
+  } = calculateAll();
+
   renderGeneralTable(generalTable);
   renderGroups(groupTables);
   renderMatches();
-  renderKnockout(knockout.bestThirds, knockout.pairings);
+  renderKnockout(
+    knockout.bestThirds,
+    knockout.pairings
+  );
+
+  renderBracket();
+
   renderHistory();
 }
 
@@ -1021,11 +1018,11 @@ function isTeamEliminated(match) {
   if (match.homeGoals === null || match.awayGoals === null) return false;
 
   // Si hay penales (o sea, empate en goles), el ganador es quien ganó en penales
-  if (match.homeGoals === match.awayGoals) {
-    if (match.homePens !== null && match.awayPens !== null) {
-      // Si el equipo que estoy evaluando (home o away) perdió en penales, está eliminado
-      // Aquí retornarías true si el equipo perdió
-    }
+  if(
+  match.homeGoals === match.awayGoals && match.homePens !== null && match.awayPens !== null
+  ){
+  homeWinner = match.homePens > match.awayPens;
+  awayWinner = match.awayPens > match.homePens;
   }
 
   // Si no hay penales, el que hizo menos goles está eliminado
@@ -1074,29 +1071,23 @@ els.resetData.addEventListener("click", () => {
 });
 
 els.historyBtn.addEventListener("click", () => {
-  const isHidden =
-    els.historySection.style.display === "none";
-
-  els.historySection.style.display =
-    isHidden ? "block" : "none";
-
-  els.historyBtn.textContent =
-    isHidden
-      ? "Ocultar Historia"
-      : "Campeones del Mundo";
+  const isHidden = els.historySection.style.display === "none";
+  els.historySection.style.display = isHidden ? "block" : "none";
+  els.historyBtn.textContent = isHidden ? "Ocultar Historia" : "Campeones del Mundo";
 });
 
-document.addEventListener(
-  "change",
-  handleMatchInput
-);
+els.knockoutBtn.addEventListener("click", () => {
+  const thirdsCard = document.querySelector("#thirds-card");
+  if(!thirdsCard) return;
+  const isHidden = thirdsCard.style.display === "none";
+  thirdsCard.style.display = isHidden ? "block" : "none";
+  els.knockoutBtn.textContent = isHidden ? "Ocultar Mejores Terceros" : "Mostrar Mejores Terceros";
+});
 
-els.teamsCount.textContent =
-  baseTeams.length;
+document.addEventListener("change", handleMatchInput);
 
-els.matchesCount.textContent =
-  groupMatches.length +
-  sourceData.knockoutTemplates.length;
+els.teamsCount.textContent = baseTeams.length;
+els.matchesCount.textContent = groupMatches.length + sourceData.knockoutTemplates.length;
 
 hydrateFilters();
 renderHistory();
