@@ -32,7 +32,8 @@ const els = {
   historySection: document.querySelector("#history-section"),
   bracketView: document.getElementById("bracket-view"),
   knockoutBtn: document.querySelector("#toggleThirds"),
-  knockoutGrid: document.querySelector("#knockout-grid")
+  thirdsSection: document.querySelector("#thirds-section"),
+  thirdsTable: document.querySelector("#thirds-table")
 };
 
 const roundClasses = {
@@ -257,11 +258,9 @@ function calculateGroupTables() {
       tables[group][team.team] = emptyStats(team.team, group);
     });
   });
-
   groupMatches.map(mergedMatch).forEach((match) => {
     applyMatch(tables[match.group], match, true);
   });
-
   return Object.fromEntries(
     Object.entries(tables).map(([group, stats]) => [
       group,
@@ -348,74 +347,61 @@ function resolveMatchRef(ref, resolvedMatches, template) {
 
 function calculateKnockoutMatches(groupTables) {
   const seeds = seedMap(groupTables);
+  const allThirds = thirdCandidates(groupTables);
   const availableThirds = thirdCandidates(groupTables).slice(0, 8);
   const usedThirdSeeds = new Set();
   const resolvedMatches = {};
-
   const pairings = sourceData.knockoutTemplates.map((template) => {
-    const homeSeed = resolveSeedRef(template.homeRef, seeds, availableThirds, usedThirdSeeds);
-    const awaySeed = resolveSeedRef(template.awayRef, seeds, availableThirds, usedThirdSeeds);
-    const homeResolved = homeSeed || resolveMatchRef(template.homeRef, resolvedMatches, template);
-    const awayResolved = awaySeed || resolveMatchRef(template.awayRef, resolvedMatches, template);
-
-    const edited = mergedMatch(template);
-
-const match = {
-  id: template.id,
-  stage: template.stage,
-  round: template.stage,
-  date: template.date,
-  time: template.time,
-  stadium: template.stadium,
-  group: template.stage,
-  label: template.label,
-  homeSeed: homeResolved.seed || template.homeRef,
-  awaySeed: awayResolved.seed || template.awayRef,
-  home: homeResolved.team || "A Definir",
-  away: awayResolved.team || "A Definir",
-  homeGoals: edited.homeGoals,
-  awayGoals: edited.awayGoals,
-  homePens: edited.homePens,
-  awayPens: edited.awayPens
+  const homeSeed = resolveSeedRef(template.homeRef, seeds, availableThirds, usedThirdSeeds);
+  const awaySeed = resolveSeedRef(template.awayRef, seeds, availableThirds, usedThirdSeeds);
+  const homeResolved = homeSeed || resolveMatchRef(template.homeRef, resolvedMatches, template);
+  const awayResolved = awaySeed || resolveMatchRef(template.awayRef, resolvedMatches, template);
+  const edited = mergedMatch(template);
+  const match = {
+    id: template.id,
+    stage: template.stage,
+    round: template.stage,
+    date: template.date,
+    time: template.time,
+    stadium: template.stadium,
+    group: template.stage,
+    label: template.label,
+    homeSeed: homeResolved.seed || template.homeRef,
+    awaySeed: awayResolved.seed || template.awayRef,
+    home: homeResolved.team || "A Definir",
+    away: awayResolved.team || "A Definir",
+    homeGoals: edited.homeGoals,
+    awayGoals: edited.awayGoals,
+    homePens: edited.homePens,
+    awayPens: edited.awayPens
 };
-
     resolvedMatches[match.id] = match;
     return match;
   });
-
-  return { bestThirds: availableThirds, pairings };
+  return { bestThirds: availableThirds, allThirds, pairings };
 }
 
 function calculateGeneralTable(groupTables, knockoutMatches) {
-
   const stats = {};
-
-  baseTeams.forEach(({ team, group }) => {
+    baseTeams.forEach(({ team, group }) => {
     stats[team] = emptyStats(team, group);
   });
-
   Object.values(groupTables).flat().forEach((team) => {
     stats[team.team] = {
       ...stats[team.team],
       ...team
     };
   });
-
   knockoutMatches.map(mergedMatch).forEach((match) => {
     applyMatch(stats, match, true);
   });
-
   // MARCAR 4° DE CADA GRUPO COMO ELIMINADOS
   Object.values(groupTables).forEach(group => {
-
     group.forEach(team => {
-
-      if(team.position === 4){
+      if(team.position === 4 && team.pj === 3){
         stats[team.team].eliminated = true;
       }
-
     });
-
   });
   const fourthPlaceTeams = Object.values(groupTables)
   .map(group =>
@@ -425,37 +411,26 @@ function calculateGeneralTable(groupTables, knockoutMatches) {
   )
   .filter(Boolean);
   const qualifiedThirdNames = [];
-
-knockoutMatches.forEach(match => {
-
-  if(match.stage !== "16avos de final") return;
-
+    knockoutMatches.forEach(match => {
+    if(match.stage !== "16avos de final") return;
   const homeSeed = match.homeSeed || "";
   const awaySeed = match.awaySeed || "";
-
-  if(homeSeed.startsWith("3")) {
+    if(homeSeed.startsWith("3")) {
     qualifiedThirdNames.push(match.home);
-  }
-
-  if(awaySeed.startsWith("3")) {
+    }
+    if(awaySeed.startsWith("3")) {
     qualifiedThirdNames.push(match.away);
-  }
-
+    }
 });
-
 Object.values(groupTables)
   .flat()
   .forEach(team => {
-
-    if(
-      team.position === 3 &&
-      !qualifiedThirdNames.includes(team.team)
-    ){
-      stats[team.team].eliminated = true;
-    }
-
+    if(team.position === 3 &&
+       team.pj === 3 &&
+       !qualifiedThirdNames.includes(team.team)
+      )
+      {stats[team.team].eliminated = true;}
   });
-
   return Object.values(finalizeStats(stats))
   .sort(compareTeams)
   .map((team, index) => ({
@@ -475,7 +450,6 @@ function teamCode(team) {
 }
 
 function teamFlag(team){
-
   if(
     !team ||
     team.startsWith("Ganador") ||
@@ -484,7 +458,6 @@ function teamFlag(team){
   ){
     return "";
   }
-
   return `
     <img
       class="flag"
@@ -568,29 +541,23 @@ function renderGeneralTable(generalTable) {
         ...team,
         eliminated: team.eliminated || eliminatedInKnockout
       };
-
       return tableRow(teamWithStatus, "general");
     })
     .join("");
-
   els.generalTable.innerHTML =
     rows || `<tr><td colspan="13">No hay selecciones...</td></tr>`;
 }
 
 function getChampion() {
-
   const final =
     sourceData.knockoutTemplates.find(
       m => m.id === "P104"
     );
-
   if (!final) return null;
-
   return winnerOf(final);
 }
 
 function checkIfTeamIsEliminated(teamName, knockoutMatches) {
-
   return knockoutMatches.some(match => {
     if (
       match.homeGoals === null ||
@@ -638,7 +605,6 @@ function renderGroups(groupTables) {
     .map(([group, teams]) => {
       const filteredTeams = teams.filter((team) => matchesQuery(group, team.team));
       if (!filteredTeams.length) return "";
-
       return `
         <article class="group-card">
           <h3>${group}</h3>
@@ -685,8 +651,7 @@ function statInput(match, field, label, className = "") {
 }
 
 function renderBracket() {
-  const matches =
-    calculateAll().knockout.pairings;
+  const matches = calculateAll().knockout.pairings;
   const rounds = {
     "16avos de final": [],
     "8vos de final": [],
@@ -713,13 +678,13 @@ function renderBracket() {
                   <div class="bracket-score">
                     ${match.homeGoals ?? "-"} - ${match.awayGoals ?? "-"}
                     ${match.homePens !== null && match.awayPens !== null ? `
-                    <div class="bracket-pens">
-                      Pen: ${match.homePens} - ${match.awayPens}
-                    </div>
-                        ` : ""
-                      }
-                    <div class="connector-right"></div>
                   </div>
+                  <div class="bracket-pens">
+                    (${match.homePens} - ${match.awayPens})
+                  </div>
+                      ` : ""
+                    }
+                  <div class="connector-right"></div>
                   <div class="bracket-team">
                     ${teamFlag(match.away)}
                     <span>${bracketName(match.away)}</span>
@@ -765,29 +730,22 @@ function editableMatchCard(match, extraLabel = "") {
         <span>${edited.group}</span>
         ${extraLabel ? `<span>${extraLabel}</span>` : ""}
       </div>
-      
       <div class="editable-teams">
         <strong class="${homeEliminated ? 'eliminated-red' : ''}">${teamFlag(edited.home)} ${edited.home}</strong>
         <strong class="${awayEliminated ? 'eliminated-red' : ''}">${teamFlag(edited.away)} ${edited.away}</strong>
       </div>
-      
       <div class="edit-grid">
         ${statInput(edited, "homeGoals", "Goles")}
         ${statInput(edited, "awayGoals", "Goles")}
-        
         ${showPens ? statInput(edited, "homePens", "Pen") : ""}
         ${showPens ? statInput(edited, "awayPens", "Pen") : ""}
-        
         ${statInput(edited, "homeYellow", "TA", "yellow-input")}
         ${statInput(edited, "awayYellow", "TA", "yellow-input")}
-        
         ${statInput(edited, "homeRed", "TR", "red-input")}
         ${statInput(edited, "awayRed", "TR", "red-input")}
-        
         ${statInput(edited, "homeFouls", "Faltas")}
         ${statInput(edited, "awayFouls", "Faltas")}
       </div>
-
       <div class="match-meta">
         <span>${edited.stadium}</span>
       </div>
@@ -807,7 +765,7 @@ function renderMatches() {
     `<div class="empty-state">No hay partidos para esos filtros.</div>`;
 }
 
-function renderBestThirds(bestThirds) {
+function renderBestThirds(allThirds) {
   return `
     <article class="thirds-card" id="thirds-card">
       <h3>Mejores terceros</h3>
@@ -815,7 +773,7 @@ function renderBestThirds(bestThirds) {
       <table>
         <thead>
           <tr>
-            <th>POS</th>
+            <th>RANK</th>
             <th class="team-head">Selección</th>
             <th>Grupo</th>
             <th>PTS</th>
@@ -826,7 +784,7 @@ function renderBestThirds(bestThirds) {
           </tr>
         </thead>
         <tbody>
-          ${bestThirds.map((team, index) => `
+          ${allThirds.map((team, index) => `
             <tr class="${index < 8 ? "team-active" : "team-eliminated"}">
               <td>${index + 1}</td>
               <td class="team-cell">${team.team}</td>
@@ -845,27 +803,22 @@ function renderBestThirds(bestThirds) {
 }
 
 function renderKnockout(bestThirds, pairings) {
-
   const cards = pairings
     .filter((match) => {
-
-      const roundOk =
-  state.knockoutRound === "all" ||
-  match.stage === state.knockoutRound;
-
-      return (
-        roundOk &&
-        matchesQuery(
-          match.home,
-          match.away,
-          match.stadium,
-          match.date,
-          match.group
+      const roundOk = state.knockoutRound === "all" || match.stage === state.knockoutRound;
+        return (
+          roundOk &&
+          matchesQuery(
+            match.home,
+            match.away,
+            match.stadium,
+            match.date,
+            match.group
         )
       );
 
     })
-    .map((match) =>
+    .map(match =>
       editableMatchCard(
         match,
         `${match.homeSeed} vs ${match.awaySeed}`
@@ -873,27 +826,29 @@ function renderKnockout(bestThirds, pairings) {
     )
     .join("");
 
+  // TERCEROS
+  els.thirdsTable.innerHTML = renderBestThirds(bestThirds);
+
+  // ELIMINATORIAS
   els.knockoutGrid.innerHTML = `
-    ${renderBestThirds(bestThirds)}
     <div class="knockout-list">
-      ${cards || `<div class="empty-state">No hay cruces para ese filtro.</div>`
+      ${
+        cards ||
+        `<div class="empty-state">
+          No hay cruces para ese filtro.
+        </div>`
       }
     </div>
   `;
 }
 
 function winnerOf(match) {
-
   const edited = mergedMatch(match);
-
   if (!hasScore(edited)) return null;
-
   if (edited.homeGoals > edited.awayGoals)
     return edited.home;
-
   if (edited.awayGoals > edited.homeGoals)
     return edited.away;
-
   if (
     Number.isFinite(edited.homePens) &&
     Number.isFinite(edited.awayPens)
@@ -902,14 +857,11 @@ function winnerOf(match) {
       ? edited.home
       : edited.away;
   }
-
   return null;
 }
 
 function renderHistory() {
-
   if (!els.historyGrid) return;
-
   els.historyGrid.innerHTML = window.WC26_HISTORY.map(cup => `
     <article class="history-card">
       <div class="history-year">${cup.year}</div>
@@ -920,14 +872,11 @@ function renderHistory() {
         <p><strong>Subcampeón:</strong><br>${cup.runnerUp}</p>
         <p><strong>Sede:</strong><br>${cup.host}</p>
       </div>
-
     </article>
   `).join("");
-
 }
 
 function hydrateFilters() {
-
   // Grupos
   Object.keys(sourceData.groups).forEach((group) => {
     els.groupFilter.insertAdjacentHTML(
@@ -935,80 +884,56 @@ function hydrateFilters() {
       `<option value="${group}">${group}</option>`
     );
   });
-
   // Eliminatorias
   const knockoutRounds = [
     ...new Set(
       sourceData.knockoutTemplates.map(match => match.stage)
     )
   ];
-
   knockoutRounds.forEach(round => {
     els.roundFilter2.insertAdjacentHTML(
       "beforeend",
       `<option value="${round}">${round}</option>`
     );
   });
-
-  // Estadios
-  [...new Set(groupMatches.map(match => match.stadium))]
-    .sort((a, b) => a.localeCompare(b, "es"))
-    .forEach((stadium) => {
-      els.stadiumFilter.insertAdjacentHTML(
-        "beforeend",
-        `<option value="${stadium}">${stadium}</option>`
-      );
-    });
-
 }
 
 function calculateAll() {
   const groupTables = calculateGroupTables();
   const knockout = calculateKnockoutMatches(groupTables);
   const generalTable = calculateGeneralTable(groupTables, knockout.pairings);
-  return { groupTables, knockout, generalTable };
+    return {
+      groupTables,
+      knockout,
+      generalTable
+    };
 }
 
 function renderAll() {
-
-  const {
-    groupTables,
-    knockout,
-    generalTable
-  } = calculateAll();
-
-  renderGeneralTable(generalTable);
-  renderGroups(groupTables);
-  renderMatches();
-  renderKnockout(
-    knockout.bestThirds,
-    knockout.pairings
-  );
-
-  renderBracket();
-
-  renderHistory();
+  const {groupTables, knockout, generalTable} = calculateAll();
+    renderGeneralTable(generalTable);
+    renderGroups(groupTables);
+    renderMatches();
+    renderKnockout(knockout.allThirds, knockout.pairings);
+    renderBracket();
+    renderHistory();
 }
 
 function handleMatchInput(event) {
   const input = event.target.closest("[data-match-id][data-field]");
-  if (!input) return;
-
+    if (!input) return;
   const matchId = input.dataset.matchId;
   const field = input.dataset.field;
   const value = toInputNumber(input.value);
   state.edits[matchId] = state.edits[matchId] || {};
-
   if (value === null) {
     delete state.edits[matchId][field];
   } else {
     state.edits[matchId][field] = value;
   }
-
   if (!Object.keys(state.edits[matchId]).length) {
     delete state.edits[matchId];
   }
-
   saveEdits();
   renderAll();
 }
@@ -1016,7 +941,6 @@ function handleMatchInput(event) {
 function isTeamEliminated(match) {
   // Solo evaluamos si el partido ya se jugó (hay goles cargados)
   if (match.homeGoals === null || match.awayGoals === null) return false;
-
   // Si hay penales (o sea, empate en goles), el ganador es quien ganó en penales
   if(
   match.homeGoals === match.awayGoals && match.homePens !== null && match.awayPens !== null
@@ -1024,11 +948,9 @@ function isTeamEliminated(match) {
   homeWinner = match.homePens > match.awayPens;
   awayWinner = match.awayPens > match.homePens;
   }
-
   // Si no hay penales, el que hizo menos goles está eliminado
   return match.homeGoals !== match.awayGoals;
 }
-
 els.tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     state.view = tab.dataset.view;
@@ -1036,32 +958,26 @@ els.tabs.forEach((tab) => {
     els.views.forEach((view) => view.classList.toggle("active", view.id === state.view));
   });
 });
-
 els.search.addEventListener("input", (event) => {
   state.query = event.target.value;
   renderAll();
 });
-
 els.groupFilter.addEventListener("change", (event) => {
   state.group = event.target.value;
   renderAll();
 });
-
 els.roundFilter.addEventListener("change", (event) => {
   state.round = event.target.value;
   renderAll();
 });
-
 els.roundFilter2.addEventListener("change", (event) => {
   state.knockoutRound = event.target.value;
   renderAll();
 });
-
 els.stadiumFilter.addEventListener("change", (event) => {
   state.stadium = event.target.value;
   renderAll();
 });
-
 els.resetData.addEventListener("click", () => {
   const shouldReset = window.confirm("¿Querés limpiar todos los goles, tarjetas y faltas cargados?");
   if (!shouldReset) return;
@@ -1069,26 +985,19 @@ els.resetData.addEventListener("click", () => {
   saveEdits();
   renderAll();
 });
-
 els.historyBtn.addEventListener("click", () => {
   const isHidden = els.historySection.style.display === "none";
   els.historySection.style.display = isHidden ? "block" : "none";
   els.historyBtn.textContent = isHidden ? "Ocultar Historia" : "Campeones del Mundo";
 });
-
 els.knockoutBtn.addEventListener("click", () => {
-  const thirdsCard = document.querySelector("#thirds-card");
-  if(!thirdsCard) return;
-  const isHidden = thirdsCard.style.display === "none";
-  thirdsCard.style.display = isHidden ? "block" : "none";
-  els.knockoutBtn.textContent = isHidden ? "Ocultar Mejores Terceros" : "Mostrar Mejores Terceros";
+  const hidden = els.thirdsSection.style.display === "none";
+    els.thirdsSection.style.display = hidden ? "block" : "none";
+    els.knockoutBtn.textContent = hidden ? "Ocultar Mejores Terceros" : "Mostrar Mejores Terceros";
 });
-
 document.addEventListener("change", handleMatchInput);
-
 els.teamsCount.textContent = baseTeams.length;
 els.matchesCount.textContent = groupMatches.length + sourceData.knockoutTemplates.length;
-
 hydrateFilters();
 renderHistory();
 renderAll();

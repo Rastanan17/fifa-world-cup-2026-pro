@@ -52,7 +52,6 @@
     </div>
   </div>
 </header>
-
   <main>
     <section class="toolbar" aria-label="Controles de navegación">
       <div class="tabs" role="tablist">
@@ -108,12 +107,15 @@
         </table>
       </div>
     </section>
-
     <section id="groups" class="view" aria-labelledby="groups-title">
       <div class="section-heading">
         <div>
           <p class="eyebrow">Fase inicial</p>
           <h2 id="groups-title">Grupos</h2>
+        </div>
+          <button id="toggleThirds">Mostrar Mejores Terceros</button>
+        <div id="thirds-section" style="display:none;">
+          <div id="thirds-table"></div>
         </div>
         <select id="group-filter" aria-label="Filtrar por grupo">
           <option value="all">Todos los grupos</option>
@@ -121,7 +123,6 @@
       </div>
       <div id="groups-grid" class="groups-grid"></div>
     </section>
-
     <section id="matches" class="view" aria-labelledby="matches-title">
       <div class="section-heading">
         <div>
@@ -142,7 +143,6 @@
       </div>
       <div id="matches-list" class="matches-list"></div>
     </section>
-
     <section id="knockout" class="view" aria-labelledby="knockout-title">
       <div class="section-heading">
         <div>
@@ -150,7 +150,6 @@
           <h2 id="knockout-title">Cruces estimados</h2>
         </div>
         <div class="filter-row-2">
-          <button id="toggleThirds">Mostrar Mejores Terceros</button>
           <select id="round-filter-2" aria-label="Filtrar por ronda-2">
             <option value="all">Todas las rondas</option>
           </select>
@@ -163,10 +162,10 @@
       <div id="knockout-grid" class="knockout-grid"></div>
     </section>
     <section id="keys" class="view">
-      <div id="bracket-view"></div>
+      <div id="bracket-view">
+      </div>
     </section>
   </main>
-
   <script src="data.js"></script>
   <script src="history.js"></script>
   <script src="app.js"></script>
